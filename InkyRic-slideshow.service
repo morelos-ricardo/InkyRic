@@ -1,0 +1,12 @@
+[Unit]
+Description=InkyRic E-Ink Slideshow
+After=multi-user.target
+
+[Service]
+User=rma
+WorkingDirectory=/home/rma/InkyRic
+ExecStart=/home/rma/InkyRic/venv_inkypi/bin/python /home/rma/InkyRic/slideshow.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
