@@ -1,22 +1,15 @@
-#!/usr/bin/env python3
-
+from inky import InkyImpression
+from PIL import Image
 import os
 import time
-from PIL import Image
-from inky.inky_impression import InkyImpression
 
-# ======================
-# Configuration
-# ======================
-IMAGE_DIR = "/opt/eink/images"
+IMAGE_DIR = "/home/rma/InkyRic/images"
 SLEEP_SECONDS = 300  # 5 minutes
 
-# Inky Impression 7.3" (PIM773)
-DISPLAY = InkyImpression(resolution=(800, 480))
+# Manual init instead of auto()
+DISPLAY = InkyImpression("red")  # Spectra 6; use "black" if mono
+DISPLAY.set_border(DISPLAY.BLACK)
 
-# ======================
-# Load images
-# ======================
 if not os.path.exists(IMAGE_DIR):
     raise RuntimeError(f"Image directory does not exist: {IMAGE_DIR}")
 
@@ -31,9 +24,6 @@ if not images:
 
 print(f"Loaded {len(images)} images")
 
-# ======================
-# Main loop
-# ======================
 while True:
     for img_path in images:
         print(f"Displaying {img_path}")
