@@ -1,2 +1,2 @@
-Pillow
-inky[rpi]
+inky==2.2.1
+pillow==12.0.0
