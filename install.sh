@@ -1,94 +1,51 @@
-#!/usr/bin/env bash
-set -e
+#!/bin/bash
 
-echo "=== InkyRic Installer ==="
+# =============================================================================
+# Automatic Installer for E-Ink Slideshow from GitHub
+# =============================================================================
 
+set -e  # Exit on errors
+
+# GitHub repository
+GITHUB_REPO="https://github.com/morelos-ricardo/InkyRic"
 APP_DIR="/opt/eink"
 IMAGE_DIR="$APP_DIR/images"
-SERVICE_NAME="eink-slideshow"
-SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+SERVICE_FILE="$APP_DIR/eink-slideshow.service"
 PYTHON_SCRIPT="$APP_DIR/slideshow.py"
 
-RUN_USER="$(logname)"
+echo "Removing any existing installation..."
+sudo rm -rf "$APP_DIR"
 
-# --------------------------
-# System dependencies
-# --------------------------
-echo "[1/7] Installing system packages..."
-sudo apt update
-sudo apt install -y \
-    python3-full \
-    python3-venv \
-    python3-pip \
-    git \
-    libopenjp2-7 \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libatlas-base-dev
+echo "Cloning repository from GitHub..."
+sudo git clone "$GITHUB_REPO" "$APP_DIR"
 
-# --------------------------
-# Directory structure
-# --------------------------
-echo "[2/7] Preparing directories..."
-sudo mkdir -p "$APP_DIR" "$IMAGE_DIR"
-sudo chown -R "$RUN_USER:$RUN_USER" "$APP_DIR"
+# Ensure images folder exists
+mkdir -p "$IMAGE_DIR"
 
-# --------------------------
-# Virtual environment
-# --------------------------
-echo "[3/7] Creating Python virtual environment..."
-cd "$APP_DIR"
+# Update OS packages
+echo "Updating system packages..."
+sudo apt-get update -y
+sudo apt-get install -y python3-pip python3-pil python3-pil.imagetk python3-pil.imagetk libjpeg-dev git
 
-if [ ! -d "venv" ]; then
-    python3 -m venv venv
-fi
+# Install Inky library (adjust if using Spectra 6)
+echo "Installing Inky library..."
+sudo pip3 install inky==2.2.1 pillow==12.0.0
 
-source venv/bin/activate
-pip install --upgrade pip
-pip install pillow inky[rpi]
-
-# --------------------------
-# SPI enable
-# --------------------------
-echo "[4/7] Enabling SPI..."
+# Enable SPI interface
+echo "Enabling SPI interface..."
 sudo sed -i 's/^#*dtparam=spi=.*/dtparam=spi=on/' /boot/firmware/config.txt
 sudo raspi-config nonint do_spi 0
 
-# --------------------------
-# systemd service
-# --------------------------
-echo "[5/7] Installing systemd service..."
+# Make sure Python script is executable
+sudo chmod +x "$PYTHON_SCRIPT"
 
-sudo tee "$SERVICE_FILE" > /dev/null <<EOF
-[Unit]
-Description=InkyRic E-Ink Slideshow
-After=network.target
-
-[Service]
-User=$RUN_USER
-WorkingDirectory=$APP_DIR
-ExecStart=$APP_DIR/venv/bin/python $PYTHON_SCRIPT
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
+# Install systemd service
+echo "Installing systemd service..."
+sudo cp "$SERVICE_FILE" /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable $SERVICE_NAME
-sudo systemctl restart $SERVICE_NAME
+sudo systemctl enable eink-slideshow
+sudo systemctl start eink-slideshow
+echo "Service installed, enabled, and started."
 
-# --------------------------
-# Verification
-# --------------------------
-echo "[6/7] Verifying installation..."
-
-[ -d "$APP_DIR/venv" ] || { echo "❌ venv missing"; exit 1; }
-systemctl is-active --quiet $SERVICE_NAME || { echo "❌ service not running"; exit 1; }
-
-echo "[7/7] Done."
-
-echo "✅ Installation complete."
-echo "📂 Put images in: $IMAGE_DIR"
-echo "🔁 Reboot recommended for SPI changes."
+echo "Installation complete!"
+echo "Put your images into $IMAGE_DIR if not already present. They will display automatically on boot."
