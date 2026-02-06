@@ -15,10 +15,12 @@ APPNAME="InkyRic"
 APP_DIR="/usr/local/$APPNAME"
 GITHUB_REPO="https://github.com/morelos-ricardo/InkyRic"
 IMAGE_DIR="$APP_DIR/images"
-SERVICE_FILE="$APP_DIR/eink-slideshow.service"
+SERVICE_NAME="eink-slideshow.service"
+SERVICE_FILE="$APP_DIR/$SERVICE_NAME"
 PYTHON_SCRIPT="$APP_DIR/slideshow.py"
 REQUIREMENTS_FILE="$APP_DIR/requirements.txt"
 VENV_PATH="$APP_DIR/venv_inkypi"
+BINPATH="/usr/local/bin"
 
 # -------------------------------
 # Utility functions
@@ -65,8 +67,6 @@ enable_interfaces(){
   echo_success "\tI2C Interface enabled"
 }
 
-
-
 check_permissions() {
   # Ensure the script is run with sudo
   if [ "$EUID" -ne 0 ]; then
@@ -75,20 +75,21 @@ check_permissions() {
   fi
 }
 
-
-
-
 # create Python virtual environment (not used in service yet)
 create_venv(){
+
+if [ -f "$REQUIREMENTS_FILE" ]; then
   echo "Creating Python virtual environment at $VENV_PATH ..."
   python3 -m venv "$VENV_PATH"
   $VENV_PATH/bin/python -m pip install --upgrade pip setuptools wheel > /dev/null
   show_loader "\tInstalling Python packages in virtual environment..."
   $VENV_PATH/bin/python -m pip install -r $REQUIREMENTS_FILE > /dev/null &
   show_loader "\tFinished installing python dependencies."
+else
+    echo_error "requirements.txt not found! Please check repository."
+fi
+
 }
-
-
 
 ask_for_reboot() {
   # Get hostname and IP address
@@ -115,12 +116,78 @@ ask_for_reboot() {
   fi
 }
 
+uninstall_if_necessary() {
+
+# Stop service if running
+if systemctl is-active --quiet $SERVICE_NAME; then
+    echo "🔴 Starting uninstall process..."
+    echo "Stopping service..."
+    sudo systemctl stop $SERVICE_NAME
+else
+    echo "Service not running."
+fi
+
+# Disable service
+if systemctl is-enabled --quiet $SERVICE_NAME; then
+    echo "Disabling service..."
+    sudo systemctl disable $SERVICE_NAME
+else
+    echo "Service already disabled."
+fi
+
+# Remove service file
+if [ -f "$SERVICE_FILE" ]; then
+    echo "Removing systemd service file..."
+    sudo rm -f "$SERVICE_FILE"
+else
+    echo "Service file already removed."
+fi
+
+sudo systemctl daemon-reload
+
+# Remove application directory
+if [ -d "$APP_DIR" ]; then
+    echo "Removing application directory..."
+    sudo rm -rf "$APP_DIR"
+else
+    echo "Application directory already removed."
+fi
+
+echo "🔍 Verifying uninstall..."
+
+ERRORS=0
+
+[ -d "$APP_DIR" ] && echo "❌ $APP_DIR still exists" && ERRORS=1
+[ -f "$SERVICE_FILE" ] && echo "❌ Service file still exists" && ERRORS=1
+systemctl list-unit-files | grep -q "$SERVICE_NAME" && echo "❌ Service still registered" && ERRORS=1
+
+if [ "$ERRORS" -eq 0 ]; then
+    echo "✅ Uninstall completed successfully."
+    exit 0
+else
+    echo "❌ Uninstall incomplete."
+    exit 1
+fi
+}
+
+install_executable() {
+  echo "Adding executable to ${BINPATH}/$APPNAME"
+  cp "$SERVICE_FILE" $BINPATH/
+  sudo chmod +x $BINPATH/$SERVICE_NAME
+  
+#sudo cp "$SERVICE_FILE" /etc/systemd/system/
+#sudo systemctl daemon-reload
+#sudo systemctl enable eink-slideshow
+#sudo systemctl start eink-slideshow
+  
+}
+
 # -------------------------------
 # Main installation steps
 # -------------------------------
 
 echo_header "Removing any existing installation..."
-sudo rm -rf "$APP_DIR"
+uninstall_if_necessary
 
 echo_header "Cloning repository from GitHub..."
 sudo git clone "$GITHUB_REPO" "$APP_DIR"
@@ -128,27 +195,16 @@ sudo git clone "$GITHUB_REPO" "$APP_DIR"
 echo_header "Ensuring images folder exists..."
 mkdir -p "$IMAGE_DIR"
 
-echo_header "Updating system packages..."
-sudo apt-get update -y
-sudo apt-get install -y python3-pip python3-pil python3-pil.imagetk libjpeg-dev git
-
-echo_header "Installing Python dependencies globally..."
-if [ -f "$REQUIREMENTS_FILE" ]; then
-    sudo pip3 install -r "$REQUIREMENTS_FILE"
-else
-    echo_error "requirements.txt not found! Please check repository."
-fi
-
 enable_interfaces   # Enable SPI/I2C interfaces
+echo_header "Installing Python dependencies globally..."
+create_venv
 
 echo_header "Making slideshow script executable..."
 sudo chmod +x "$PYTHON_SCRIPT"
 
 echo_header "Installing systemd service..."
-sudo cp "$SERVICE_FILE" /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable eink-slideshow
-sudo systemctl start eink-slideshow
+install_executable
+
 
 echo_success "Installation complete!"
 echo "Put your images into $IMAGE_DIR if not already present."
