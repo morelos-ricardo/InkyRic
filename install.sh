@@ -170,6 +170,13 @@ else
 fi
 }
 
+
+intstall_general_libraries(){
+sudo apt-get update
+sudo apt-get install tree
+
+}
+
 install_executable() {
   echo "Adding executable to ${BINPATH}/$APPNAME"
   cp "$SERVICE_FILE" $BINPATH/
@@ -195,6 +202,7 @@ sudo git clone "$GITHUB_REPO" "$APP_DIR"
 echo_header "Ensuring images folder exists..."
 mkdir -p "$IMAGE_DIR"
 
+intstall_general_libraries
 enable_interfaces   # Enable SPI/I2C interfaces
 echo_header "Installing Python dependencies globally..."
 create_venv
