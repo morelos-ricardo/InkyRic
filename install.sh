@@ -41,13 +41,13 @@ show_loader() {
   else
     printf "\r$1 [\e[31m\xE2\x9C\x98\e[0m]\n"
   fi
-  
 }
 
 echo_success() { echo -e "$1 [\e[32m\xE2\x9C\x94\e[0m]"; }
-echo_error() { echo -e "${red}$1${normal} [\e[31m\xE2\x9C\x98\e[0m]\n"; }
-echo_header() { echo -e "${bold}$1${normal}"; }
 
+echo_error() { echo -e "${red}$1${normal} [\e[31m\xE2\x9C\x98\e[0m]\n"; }
+
+echo_header() { echo -e "${bold}$1${normal}"; }
 
 # Enable SPI and I2C interfaces (needed for Inky displays)
 enable_interfaces(){
