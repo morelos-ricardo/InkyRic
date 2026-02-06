@@ -7,7 +7,7 @@ Wants=network-online.target               # Ensure network-online.target is pull
 User=root                                 # Run as root (same as old inkypi.service)
 RuntimeDirectory=eink-slideshow          # Creates /run/eink-slideshow for runtime files (locks/temp)
 WorkingDirectory=/home/rma/InkyRic       # Base directory for relative paths
-ExecStart=/usr/bin/python3 /home/rma/InkyRic/slideshow.py
+ExecStart=/usr/bin/slideshow.py
                                           # Run slideshow.py using system Python (no virtual environment)
 Restart=on-failure                        # Restart only if the script crashes
 RestartSec=60                             # Wait 60 seconds before restarting after a failure
