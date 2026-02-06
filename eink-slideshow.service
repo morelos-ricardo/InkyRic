@@ -1,12 +1,21 @@
 [Unit]
-Description=InkyRic E-Ink Slideshow
-After=multi-user.target
+Description=InkyRic E-Ink Slideshow    # Friendly description of the service
+After=network-online.target            # Ensure network is up before starting
+Wants=network-online.target            # Request network-online.target as a dependency
 
 [Service]
-User=rma
-WorkingDirectory=/home/rma/InkyRic
+User=rma                               # Run the service as user 'rma' (not root)
+RuntimeDirectory=eink-slideshow        # Creates /run/eink-slideshow for runtime files (temp files, locks)
+WorkingDirectory=/home/rma/InkyRic     # Base directory for relative paths and working files
 ExecStart=/home/rma/InkyRic/venv_inkypi/bin/python /home/rma/InkyRic/slideshow.py
-Restart=always
+                                        # Command to run your slideshow.py inside the Python virtual environment
+Restart=on-failure                     # Only restart if the script crashes (safer than always)
+RestartSec=60                          # Wait 60 seconds before restarting after a failure
+KillSignal=SIGINT                       # Send SIGINT to terminate the script cleanly on stop/restart
+StandardOutput=journal                 # Direct stdout logs to systemd journal
+StandardError=journal                  # Direct stderr logs to systemd journal
+CPUQuota=40%                           # Limit CPU usage to 40% of one CPU
+MemoryMax=200M                         # Limit memory usage to 200 MB
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user.target             # Start automatically during system boot in multi-user mode
