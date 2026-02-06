@@ -1,117 +1,58 @@
 #!/bin/bash
 # =============================================================================
-# Script Name: install.sh
-# Description: Installer for InkyRic E-Ink Slideshow
-#              - Clones GitHub repo
-#              - Installs dependencies
-#              - Enables SPI
-#              - Sets up systemd service to run slideshow on boot
+# Automatic Installer for E-Ink Slideshow (old style + useful functions)
 # =============================================================================
 
-set -e  # Exit immediately on error
+bold=$(tput bold)
+normal=$(tput sgr0)
+red=$(tput setaf 1)
+green=$(tput setaf 2)
 
-# -----------------------------
-# Configuration
-# -----------------------------
-APP_NAME="eink-slideshow"
-INSTALL_DIR="/opt/eink"
-VENV_DIR="$INSTALL_DIR/venv"
-SERVICE_FILE="$APP_NAME.service"
-SERVICE_TARGET="/etc/systemd/system/$SERVICE_FILE"
+set -e  # Exit on error
+
+APP_DIR="/home/rma/InkyRic"
 GITHUB_REPO="https://github.com/morelos-ricardo/InkyRic"
-PYTHON_SCRIPT="$INSTALL_DIR/slideshow.py"
+IMAGE_DIR="$APP_DIR/images"
+SERVICE_FILE="$APP_DIR/eink-slideshow.service"
+PYTHON_SCRIPT="$APP_DIR/slideshow.py"
+REQUIREMENTS_FILE="$APP_DIR/requirements.txt"
 
-# -----------------------------
-# Helper functions
-# -----------------------------
+# -------------------------------
+# Utility functions
+# -------------------------------
 
-# Ensure script is run as root
-check_permissions() {
-  if [ "$EUID" -ne 0 ]; then
-    echo "ERROR: Please run this installer with sudo."
-    exit 1
-  fi
-}
-
-# Enable SPI interface (required for Inky)
-enable_spi() {
-  echo "Enabling SPI interface..."
-  sed -i 's/^#*dtparam=spi=.*/dtparam=spi=on/' /boot/firmware/config.txt
-  raspi-config nonint do_spi 0
-}
-
-# Install OS-level dependencies
-install_apt_dependencies() {
-  echo "Installing system dependencies..."
-  apt-get update -y
-  apt-get install -y \
-    git \
-    python3 \
-    python3-pip \
-    python3-venv \
-    libjpeg-dev \
-    zlib1g-dev
-}
-
-# Clone or refresh repository
-install_source() {
-  echo "Installing application from GitHub..."
-  rm -rf "$INSTALL_DIR"
-  git clone "$GITHUB_REPO" "$INSTALL_DIR"
-}
-
-# Create Python virtual environment and install dependencies
-create_venv() {
-  echo "Creating virtual environment..."
-  python3 -m venv "$VENV_DIR"
-  "$VENV_DIR/bin/pip" install --upgrade pip setuptools wheel
-  "$VENV_DIR/bin/pip" install -r "$INSTALL_DIR/requirements.txt"
-}
-
-# Install systemd service
-install_service() {
-  echo "Installing systemd service..."
-
-  cat <<EOF > "$SERVICE_TARGET"
-[Unit]
-Description=E-Ink Slideshow Service
-After=network.target
-
-[Service]
-ExecStart=$VENV_DIR/bin/python $PYTHON_SCRIPT
-WorkingDirectory=$INSTALL_DIR
-Restart=always
-User=root
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-  systemctl daemon-reexec
-  systemctl daemon-reload
-  systemctl enable "$APP_NAME"
-}
-
-# Ask user for reboot
-ask_for_reboot() {
-  echo ""
-  read -p "Installation complete. Reboot now? (y/n): " choice
-  if [[ "$choice" =~ ^[Yy]$ ]]; then
-    reboot
+# Show a spinner/loader while a background process runs
+show_loader() {
+  local pid=$!
+  local delay=0.1
+  local spinstr='|/-\'
+  printf "$1 [${spinstr:0:1}] "
+  while ps a | awk '{print $1}' | grep -q "${pid}"; do
+    local temp=${spinstr#?}
+    printf "\r$1 [${temp:0:1}] "
+    spinstr=${temp}${spinstr%"${temp}"}
+    sleep ${delay}
+  done
+  if [[ $? -eq 0 ]]; then
+    printf "\r$1 [\e[32m\xE2\x9C\x94\e[0m]\n"
   else
-    echo "Reboot skipped. Please reboot manually later."
+    printf "\r$1 [\e[31m\xE2\x9C\x98\e[0m]\n"
   fi
 }
 
-# -----------------------------
-# Main installation flow
-# -----------------------------
-check_permissions
-install_apt_dependencies
-enable_spi
-install_source
-create_venv
-install_service
+echo_success() { echo -e "$1 [\e[32m\xE2\x9C\x94\e[0m]"; }
+echo_error() { echo -e "${red}$1${normal} [\e[31m\xE2\x9C\x98\e[0m]\n"; }
+echo_header() { echo -e "${bold}$1${normal}"; }
 
-echo "Installation finished successfully."
-ask_for_reboot
+# Enable SPI and I2C interfaces (needed for Inky displays)
+enable_interfaces(){
+  echo "Enabling interfaces required for E-Ink slideshow..."
+  # Enable SPI
+  sudo sed -i 's/^dtparam=spi=.*/dtparam=spi=on/' /boot/firmware/config.txt
+  sudo sed -i 's/^#dtparam=spi=.*/dtparam=spi=on/' /boot/firmware/config.txt
+  sudo raspi-config nonint do_spi 0
+  echo_success "\tSPI Interface enabled"
+
+  # Enable I2C
+  sudo sed -i 's/^dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/firmware/config.txt
+  sudo sed -i 's/^#dtparam=i2c_arm=.*/dtparam=i2*_
