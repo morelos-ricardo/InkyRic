@@ -1,21 +1,21 @@
 [Unit]
-Description=InkyRic E-Ink Slideshow    # Friendly description of the service
-After=network-online.target            # Ensure network is up before starting
-Wants=network-online.target            # Request network-online.target as a dependency
+Description=InkyRic E-Ink Slideshow       # Friendly description of the service
+After=network-online.target               # Wait until network is online before starting
+Wants=network-online.target               # Ensure network-online.target is pulled in as dependency
 
 [Service]
-User=rma                               # Run the service as user 'rma' (not root)
-RuntimeDirectory=eink-slideshow        # Creates /run/eink-slideshow for runtime files (temp files, locks)
-WorkingDirectory=/home/rma/InkyRic     # Base directory for relative paths and working files
+User=root                                 # Run as root (same as old inkypi.service)
+RuntimeDirectory=eink-slideshow          # Creates /run/eink-slideshow for runtime files (locks/temp)
+WorkingDirectory=/run/InkyRic       # Base directory for relative paths
 ExecStart=/home/rma/InkyRic/venv_inkypi/bin/python /home/rma/InkyRic/slideshow.py
-                                        # Command to run your slideshow.py inside the Python virtual environment
-Restart=on-failure                     # Only restart if the script crashes (safer than always)
-RestartSec=60                          # Wait 60 seconds before restarting after a failure
-KillSignal=SIGINT                       # Send SIGINT to terminate the script cleanly on stop/restart
-StandardOutput=journal                 # Direct stdout logs to systemd journal
-StandardError=journal                  # Direct stderr logs to systemd journal
-CPUQuota=40%                           # Limit CPU usage to 40% of one CPU
-MemoryMax=200M                         # Limit memory usage to 200 MB
+                                          # Run slideshow.py inside your Python virtual environment
+Restart=on-failure                        # Restart only if the script crashes
+RestartSec=60                             # Wait 60 seconds before restarting after a failure
+KillSignal=SIGINT                          # Cleanly shut down Python script on stop/restart
+StandardOutput=journal                     # Send stdout to systemd journal
+StandardError=journal                      # Send stderr to systemd journal
+CPUQuota=40%                               # Limit CPU usage to 40% of one CPU
+MemoryMax=200M                             # Limit memory usage to 200 MB
 
 [Install]
-WantedBy=multi-user.target             # Start automatically during system boot in multi-user mode
+WantedBy=multi-user.target                # Start automatically at boot in multi-user mode
