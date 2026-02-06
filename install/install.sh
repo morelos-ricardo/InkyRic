@@ -8,18 +8,28 @@ normal=$(tput sgr0)
 red=$(tput setaf 1)
 green=$(tput setaf 2)
 
+SOURCE=${BASH_SOURCE[0]}
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+  SOURCE=$(readlink "$SOURCE")
+  [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE
+done
+SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+
 set -e  # Exit on error
-
-
-APPNAME="InkyRic"
-APP_DIR="/usr/local/$APPNAME"
 GITHUB_REPO="https://github.com/morelos-ricardo/InkyRic"
-IMAGE_DIR="$APP_DIR/images"
+SCRIPT_DIR=GITHUB_REPO
+SRC_PATH="$SCRIPT_DIR/../src"
+
+APPNAME="inkypi"
+INSTALL_PATH="/usr/local/$APPNAME"
+
+IMAGE_DIR="$INSTALL_PATH/images"
 SERVICE_NAME="inkypi.service"
-SERVICE_FILE="$APP_DIR/$SERVICE_NAME"
-PYTHON_SCRIPT="$APP_DIR/slideshow.py"
-REQUIREMENTS_FILE="$APP_DIR/requirements.txt"
-VENV_PATH="$APP_DIR/venv_inkypi"
+SERVICE_FILE="$INSTALL_PATH/$SERVICE_NAME"
+PYTHON_SCRIPT="$INSTALL_PATH/slideshow.py"
+REQUIREMENTS_FILE="$INSTALL_PATH/requirements.txt"
+VENV_PATH="$INSTALL_PATH/venv_$APPNAME"
 BINPATH="/usr/local/bin"
 
 # -------------------------------
@@ -146,9 +156,9 @@ fi
 sudo systemctl daemon-reload
 
 # Remove application directory
-if [ -d "$APP_DIR" ]; then
+if [ -d "$INSTALL_PATH" ]; then
     echo "Removing application directory..."
-    sudo rm -rf "$APP_DIR"
+    sudo rm -rf "$INSTALL_PATH"
 else
     echo "Application directory already removed."
 fi
@@ -157,7 +167,7 @@ echo "🔍 Verifying uninstall..."
 
 ERRORS=0
 
-[ -d "$APP_DIR" ] && echo "❌ $APP_DIR still exists" && ERRORS=1
+[ -d "$INSTALL_PATH" ] && echo "❌ $INSTALL_PATH still exists" && ERRORS=1
 [ -f "$SERVICE_FILE" ] && echo "❌ Service file still exists" && ERRORS=1
 systemctl list-unit-files | grep -q "$SERVICE_NAME" && echo "❌ Service still registered" && ERRORS=1
 
@@ -174,6 +184,8 @@ fi
 intstall_general_libraries(){
 sudo apt-get update
 sudo apt-get install tree
+
+
 
 }
 
@@ -197,7 +209,7 @@ echo_header "Removing any existing installation..."
 uninstall_if_necessary
 
 echo_header "Cloning repository from GitHub..."
-sudo git clone "$GITHUB_REPO" "$APP_DIR"
+sudo git clone "$GITHUB_REPO" "$INSTALL_PATH"
 
 echo_header "Ensuring images folder exists..."
 mkdir -p "$IMAGE_DIR"
