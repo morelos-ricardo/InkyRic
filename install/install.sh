@@ -18,18 +18,12 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
   [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE
 done
 SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
-
-
-
-set -e  # Exit on error
-GITHUB_REPO="https://github.com/morelos-ricardo/InkyRic"
-SCRIPT_DIR=GITHUB_REPO
 SRC_PATH="$SCRIPT_DIR/../src"
 
 APPNAME="inkypi"
 INSTALL_PATH="/usr/local/$APPNAME"
 
-IMAGE_DIR="$INSTALL_PATH/images"
+
 SERVICE_NAME="inkypi.service"
 SERVICE_FILE="$INSTALL_PATH/$SERVICE_NAME"
 PYTHON_SCRIPT="$INSTALL_PATH/slideshow.py"
@@ -181,9 +175,6 @@ install_executable() {
 # Main installation steps
 # -------------------------------
 
-
-echo_header "Ensuring images folder exists..."
-mkdir -p "$IMAGE_DIR"
 
 intstall_general_libraries
 enable_interfaces   # Enable SPI/I2C interfaces
