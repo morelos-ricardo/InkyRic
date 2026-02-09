@@ -201,6 +201,18 @@ sudo apt-get install tree
 
 }
 
+install_app_service() {
+  echo "Installing $APPNAME systemd service."
+  if [ -f "$SERVICE_FILE_SOURCE" ]; then
+    cp "$SERVICE_FILE_SOURCE" "$SERVICE_FILE_TARGET"
+    sudo systemctl daemon-reload
+    sudo systemctl enable $SERVICE_FILE
+  else
+    echo_error "ERROR: Service file $SERVICE_FILE_SOURCE not found!"
+    exit 1
+  fi
+}
+
 install_executable() {
   echo "Adding executable to ${BINPATH}/$APPNAME"
   cp "$SERVICE_FILE" $BINPATH/
@@ -236,6 +248,7 @@ sudo chmod +x "$PYTHON_SCRIPT"
 
 echo_header "Installing systemd service..."
 install_executable
+install_app_service
 
 
 echo_success "Installation complete!"
