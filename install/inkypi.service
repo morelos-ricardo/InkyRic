@@ -1,14 +1,14 @@
 [Unit]
-Description=InkyRic E-Ink Slideshow       # Friendly description of the service
+Description=InkyPi App      # Friendly description of the service
 After=network-online.target               # Wait until network is online before starting
 Wants=network-online.target               # Ensure network-online.target is pulled in as dependency
 
 [Service]
 User=root                                 # Run as root (same as old inkypi.service)
-RuntimeDirectory=eink-slideshow          # Creates /run/eink-slideshow for runtime files (locks/temp)
-WorkingDirectory=/home/rma/InkyRic       # Base directory for relative paths
-ExecStart=/usr/bin/inkypi
-                                          # Run slideshow.py using system Python (no virtual environment)
+RuntimeDirectory=inkypi
+WorkingDirectory=/run/inkypi
+ExecStart=/usr/local/bin/inkypi run
+                                          
 Restart=on-failure                        # Restart only if the script crashes
 RestartSec=60                             # Wait 60 seconds before restarting after a failure
 KillSignal=SIGINT                          # Cleanly shut down Python script on stop/restart
