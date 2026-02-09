@@ -141,17 +141,47 @@ if [ -f "$PIP_REQUIREMENTS_FILE" ]; then
 else
     echo_error "requirements.txt not found! Please check repository."
 fi
-
 }
+
+install_app_service() {
+  echo "Installing $APPNAME systemd service."
+  if [ -f "$SERVICE_FILE_SOURCE" ]; then
+    cp "$SERVICE_FILE_SOURCE" "$SERVICE_FILE_TARGET"
+    sudo systemctl daemon-reload
+    sudo systemctl enable $SERVICE_FILE
+  else
+    echo_error "ERROR: Service file $SERVICE_FILE_SOURCE not found!"
+    exit 1
+  fi
+}
+
+install_executable() {
+  echo "Adding executable to ${BINPATH}/$APPNAME"
+  cp "$SERVICE_FILE" $BINPATH/
+  sudo chmod +x $BINPATH/$SERVICE_NAME   
+}
+
+stop_service() {
+    echo "Checking if $SERVICE_FILE is running"
+    if /usr/bin/systemctl is-active --quiet $SERVICE_FILE
+    then
+      /usr/bin/systemctl stop $SERVICE_FILE > /dev/null &
+      show_loader "Stopping $APPNAME service"
+    else  
+      echo_success "\t$SERVICE_FILE not running"
+    fi
+}
+
+start_service() {
+  echo "Starting $APPNAME service."
+  sudo systemctl start $SERVICE_FILE
+
 
 ask_for_reboot() {
   # Get hostname and IP address
-  hostname=$(get_hostname)
-  ip_address=$(get_ip_address)
+
   echo_header "$(echo_success "${APPNAME^^} Installation Complete!")"
   echo_header "[•] A reboot of your Raspberry Pi is required for the changes to take effect"
-  echo_header "[•] After your Pi is rebooted, you can access the web UI by going to $(echo_blue "'$hostname.local'") or $(echo_blue "'$ip_address'") in your browser."
-  echo_header "[•] If you encounter any issues or have suggestions, please submit them here: https://github.com/fatihak/InkyPi/issues"
 
   read -p "Would you like to restart your Raspberry Pi now? [Y/N] " userInput
   userInput="${userInput^^}"
@@ -177,52 +207,27 @@ sudo apt-get install tree
 }
 
 
-install_app_service() {
-  echo "Installing $APPNAME systemd service."
-  if [ -f "$SERVICE_FILE_SOURCE" ]; then
-    cp "$SERVICE_FILE_SOURCE" "$SERVICE_FILE_TARGET"
-    sudo systemctl daemon-reload
-    sudo systemctl enable $SERVICE_FILE
-  else
-    echo_error "ERROR: Service file $SERVICE_FILE_SOURCE not found!"
-    exit 1
-  fi
-}
-
-install_executable() {
-  echo "Adding executable to ${BINPATH}/$APPNAME"
-  cp "$SERVICE_FILE" $BINPATH/
-  sudo chmod +x $BINPATH/$SERVICE_NAME
-  
-#sudo cp "$SERVICE_FILE" /etc/systemd/system/
-#sudo systemctl daemon-reload
-#sudo systemctl enable eink-slideshow
-#sudo systemctl start eink-slideshow
-  
-}
-
 # -------------------------------
 # Main installation steps
 # -------------------------------
 
+check_permissions
+stop_service
 
 intstall_general_libraries
+
 enable_interfaces   # Enable SPI/I2C interfaces
 install_debian_dependencies
 echo_header "Installing Python dependencies globally..."
+
 create_venv
-
-echo_header "Making slideshow script executable..."
-sudo chmod +x "$PYTHON_SCRIPT"
-
-echo_header "Installing systemd service..."
 install_executable
+#install_config ??needed?
 install_app_service
 
 
 echo_success "Installation complete!"
 echo "Put your images into $IMAGE_DIR if not already present."
 echo "The slideshow will start automatically on boot."
-echo "A reboot is recommended if SPI/I2C interfaces were updated."
 
 ask_for_reboot
