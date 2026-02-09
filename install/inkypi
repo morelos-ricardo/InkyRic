@@ -22,7 +22,7 @@ usage() {
 
 run_app() {
     source "$VENV_PATH/bin/activate"
-    exec python -u "$(realpath "$PROGRAM_PATH/src/inkypi.py")"
+    exec python -u "$(realpath "$PROGRAM_PATH/src/slideshow.py")"
 }
 
 run_plugin_cli() {
