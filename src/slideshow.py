@@ -37,9 +37,9 @@ if not images:
 logger.info(f"Loaded {len(images)} images from {IMAGE_DIR}")
 
 # Optionally display a startup image
-if device_config.get_config("startup", True):
+if device_config.get_config("startup") is True:
     logger.info("Displaying startup image")
-    from utils.app_utils import generate_startup_image
+    #from utils.app_utils import generate_startup_image
     img = generate_startup_image(device_config.get_resolution())
     display_manager.display_image(img)
     device_config.update_value("startup", False, write=True)
