@@ -3,6 +3,9 @@
 # Automatic Installer for E-Ink Slideshow (old style + useful functions)
 # =============================================================================
 
+#Installer. Installs assuming repo is cloned.
+
+# Formatting stuff
 bold=$(tput bold)
 normal=$(tput sgr0)
 red=$(tput setaf 1)
@@ -15,6 +18,8 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
   [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE
 done
 SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+
+
 
 set -e  # Exit on error
 GITHUB_REPO="https://github.com/morelos-ricardo/InkyRic"
@@ -138,59 +143,6 @@ ask_for_reboot() {
   fi
 }
 
-uninstall_if_necessary() {
-
-# Stop service if running
-if systemctl is-active --quiet $SERVICE_NAME; then
-    echo "🔴 Starting uninstall process..."
-    echo "Stopping service..."
-    sudo systemctl stop $SERVICE_NAME
-else
-    echo "Service not running."
-fi
-
-# Disable service
-if systemctl is-enabled --quiet $SERVICE_NAME; then
-    echo "Disabling service..."
-    sudo systemctl disable $SERVICE_NAME
-else
-    echo "Service already disabled."
-fi
-
-# Remove service file
-if [ -f "$SERVICE_FILE" ]; then
-    echo "Removing systemd service file..."
-    sudo rm -f "$SERVICE_FILE"
-else
-    echo "Service file already removed."
-fi
-
-sudo systemctl daemon-reload
-
-# Remove application directory
-if [ -d "$INSTALL_PATH" ]; then
-    echo "Removing application directory..."
-    sudo rm -rf "$INSTALL_PATH"
-else
-    echo "Application directory already removed."
-fi
-
-echo "🔍 Verifying uninstall..."
-
-ERRORS=0
-
-[ -d "$INSTALL_PATH" ] && echo "❌ $INSTALL_PATH still exists" && ERRORS=1
-[ -f "$SERVICE_FILE" ] && echo "❌ Service file still exists" && ERRORS=1
-systemctl list-unit-files | grep -q "$SERVICE_NAME" && echo "❌ Service still registered" && ERRORS=1
-
-if [ "$ERRORS" -eq 0 ]; then
-    echo "✅ Uninstall completed successfully."
-    exit 0
-else
-    echo "❌ Uninstall incomplete."
-    exit 1
-fi
-}
 
 
 intstall_general_libraries(){
@@ -229,11 +181,6 @@ install_executable() {
 # Main installation steps
 # -------------------------------
 
-echo_header "Removing any existing installation..."
-uninstall_if_necessary
-
-echo_header "Cloning repository from GitHub..."
-sudo git clone "$GITHUB_REPO" "$INSTALL_PATH"
 
 echo_header "Ensuring images folder exists..."
 mkdir -p "$IMAGE_DIR"
