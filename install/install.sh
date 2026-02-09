@@ -18,22 +18,50 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
   [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE
 done
 SCRIPT_DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
-SRC_PATH="$SCRIPT_DIR/../src"
+
 
 APPNAME="inkypi"
 INSTALL_PATH="/usr/local/$APPNAME"
-
-
-SERVICE_NAME="inkypi.service"
-SERVICE_FILE="$INSTALL_PATH/$SERVICE_NAME"
-PYTHON_SCRIPT="$INSTALL_PATH/slideshow.py"
-REQUIREMENTS_FILE="$INSTALL_PATH/requirements.txt"
-VENV_PATH="$INSTALL_PATH/venv_$APPNAME"
+SRC_PATH="$SCRIPT_DIR/../src"
 BINPATH="/usr/local/bin"
+VENV_PATH="$INSTALL_PATH/venv_$APPNAME"
+
+SERVICE_FILE="$APPNAME.service"
+SERVICE_FILE_SOURCE="$SCRIPT_DIR/$SERVICE_FILE"
+
+PIP_REQUIREMENTS_FILE="$INSTALL_PATH/requirements.txt"
+
+
 
 # -------------------------------
 # Utility functions
 # -------------------------------
+
+
+check_permissions() {
+  # Ensure the script is run with sudo
+  if [ "$EUID" -ne 0 ]; then
+    echo_error "ERROR: Installation requires root privileges. Please run it with sudo."
+    exit 1
+  fi
+}
+
+# Enable SPI and I2C interfaces (needed for Inky displays)
+enable_interfaces(){
+  echo "Enabling interfaces required for E-Ink slideshow..."
+  # Enable SPI
+  sudo sed -i 's/^dtparam=spi=.*/dtparam=spi=on/' /boot/firmware/config.txt
+  sudo sed -i 's/^#dtparam=spi=.*/dtparam=spi=on/' /boot/firmware/config.txt
+  sudo raspi-config nonint do_spi 0
+  echo_success "\tSPI Interface enabled"
+
+  # Enable I2C
+  sudo sed -i 's/^dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/firmware/config.txt
+  sudo sed -i 's/^#dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/firmware/config.txt
+  sudo raspi-config nonint do_i2c 0
+  echo_success "\tI2C Interface enabled"
+}
+
 
 # Show a spinner/loader while a background process runs
 show_loader() {
@@ -54,40 +82,44 @@ show_loader() {
   fi
 }
 
-echo_success() { echo -e "$1 [\e[32m\xE2\x9C\x94\e[0m]"; }
-
-echo_error() { echo -e "${red}$1${normal} [\e[31m\xE2\x9C\x98\e[0m]\n"; }
-
-echo_header() { echo -e "${bold}$1${normal}"; }
-
-# Enable SPI and I2C interfaces (needed for Inky displays)
-enable_interfaces(){
-  echo "Enabling interfaces required for E-Ink slideshow..."
-  # Enable SPI
-  sudo sed -i 's/^dtparam=spi=.*/dtparam=spi=on/' /boot/firmware/config.txt
-  sudo sed -i 's/^#dtparam=spi=.*/dtparam=spi=on/' /boot/firmware/config.txt
-  sudo raspi-config nonint do_spi 0
-  echo_success "\tSPI Interface enabled"
-
-  # Enable I2C
-  sudo sed -i 's/^dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/firmware/config.txt
-  sudo sed -i 's/^#dtparam=i2c_arm=.*/dtparam=i2c_arm=on/' /boot/firmware/config.txt
-  sudo raspi-config nonint do_i2c 0
-  echo_success "\tI2C Interface enabled"
+echo_success() {
+  echo -e "$1 [\e[32m\xE2\x9C\x94\e[0m]"
 }
 
-check_permissions() {
-  # Ensure the script is run with sudo
-  if [ "$EUID" -ne 0 ]; then
-    echo_error "ERROR: Installation requires root privileges. Please run it with sudo."
+echo_override() {
+  echo -e "\r$1"
+}
+
+echo_header() {
+  echo -e "${bold}$1${normal}"
+}
+
+echo_error() {
+  echo -e "${red}$1${normal} [\e[31m\xE2\x9C\x98\e[0m]\n"
+}
+
+echo_blue() {
+  echo -e "\e[38;2;65;105;225m$1\e[0m"
+}
+
+install_debian_dependencies() {
+  if [ -f "$APT_REQUIREMENTS_FILE" ]; then
+    sudo apt-get update > /dev/null &
+    show_loader "Fetch available system dependencies updates. " 
+
+    xargs -a "$APT_REQUIREMENTS_FILE" sudo apt-get install -y > /dev/null &
+    show_loader "Installing system dependencies. "
+  else
+    echo "ERROR: System dependencies file $APT_REQUIREMENTS_FILE not found!"
     exit 1
   fi
 }
 
+
 # create Python virtual environment (not used in service yet)
 create_venv(){
 
-if [ -f "$REQUIREMENTS_FILE" ]; then
+if [ -f "$PIP_REQUIREMENTS_FILE" ]; then
   echo "Creating Python virtual environment at $VENV_PATH ..."
   python3 -m venv "$VENV_PATH" #runs python 3 to run the venv module, which is Python’s standard tool to create virtual environments, in given path. created structure:
 #$VENV_PATH/
@@ -104,7 +136,7 @@ if [ -f "$REQUIREMENTS_FILE" ]; then
   $VENV_PATH/bin/python -m pip install --upgrade pip setuptools wheel > /dev/null #Calls the Python inside the virtual environment,Runs the pip module (Python’s package installer), Upgrades the  three core Python tools
   #> /dev/null → Redirects all normal output to “nowhere” → so the terminal doesn’t show the normal installation messages.
   show_loader "\tInstalling Python packages in virtual environment..."
-  $VENV_PATH/bin/python -m pip install -r $REQUIREMENTS_FILE > /dev/null &
+  $VENV_PATH/bin/python -m pip install -r $PIP_REQUIREMENTS_FILE > /dev/null &
   show_loader "\tFinished installing python dependencies."
 else
     echo_error "requirements.txt not found! Please check repository."
@@ -142,10 +174,8 @@ ask_for_reboot() {
 intstall_general_libraries(){
 sudo apt-get update
 sudo apt-get install tree
-
-
-
 }
+
 
 install_app_service() {
   echo "Installing $APPNAME systemd service."
@@ -178,6 +208,7 @@ install_executable() {
 
 intstall_general_libraries
 enable_interfaces   # Enable SPI/I2C interfaces
+install_debian_dependencies
 echo_header "Installing Python dependencies globally..."
 create_venv
 
