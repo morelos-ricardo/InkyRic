@@ -92,10 +92,16 @@ if [ -f "$REQUIREMENTS_FILE" ]; then
   echo "Creating Python virtual environment at $VENV_PATH ..."
   python3 -m venv "$VENV_PATH" #runs python 3 to run the venv module, which is Python’s standard tool to create virtual environments, in given path. created structure:
 #$VENV_PATH/
-#├── bin/        # python and pip executables
-#├── include/    # C headers (optional)
-#├── lib/        # Python packages installed here
-#└── pyvenv.cfg  # metadata about this virtual environment  
+#├── bin/
+#│   ├── activate        ← FILE (shell script)
+#│   ├── activate.csh
+#│   ├── activate.fish
+#│   ├── python
+#│   ├── pip
+#│   └── ...
+#├── include/
+#├── lib/
+#└── pyvenv.cfg
   $VENV_PATH/bin/python -m pip install --upgrade pip setuptools wheel > /dev/null #Calls the Python inside the virtual environment,Runs the pip module (Python’s package installer), Upgrades the  three core Python tools
   #> /dev/null → Redirects all normal output to “nowhere” → so the terminal doesn’t show the normal installation messages.
   show_loader "\tInstalling Python packages in virtual environment..."
