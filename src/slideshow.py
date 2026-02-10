@@ -6,6 +6,7 @@ import logging
 from PIL import Image
 from config import Config
 from display.display_manager import DisplayManager
+from utils.app_utils import generate_startup_image
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -38,8 +39,7 @@ logger.info(f"Loaded {len(images)} images from {IMAGE_DIR}")
 
 # Optionally display a startup image
 if device_config.get_config("startup") is True:
-    logger.info("Displaying startup image")
-    #from utils.app_utils import generate_startup_image
+    logger.info("Displaying startup image")    
     img = generate_startup_image(device_config.get_resolution())
     display_manager.display_image(img)
     device_config.update_value("startup", False, write=True)
