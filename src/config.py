@@ -20,6 +20,18 @@ class Config:
         """Returns the image directory path."""
         return self.IMAGE_DIR
 
+    def get_config(self, key=None, default={}):
+        """Gets the value of a specific configuration key or returns the entire config if none provided."""
+        if key is not None:
+            return self.config.get(key, default)
+        return self.config
+
+    def update_value(self, key, value, write=False):
+        """Updates a specific key in the configuration with a new value and optionally writes it to the config file."""
+        self.config[key] = value
+        if write:
+            self.write_config()
+
     def get_resolution(self):
         """Returns the display resolution as a tuple (width, height)."""
         return self.RESOLUTION
