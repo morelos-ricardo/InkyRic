@@ -230,7 +230,7 @@ install_app_service
 
 
 echo_success "Installation complete!"
-echo "Put your images into $IMAGE_DIR if not already present."
+echo "Put your images into images folder if not already present."
 echo "The slideshow will start automatically on boot."
 
 ask_for_reboot
