@@ -1,61 +1,62 @@
+#!/bin/bash
 
+# ==========================================
+# FULL RESET SCRIPT FOR INKYPI
+# Stops service, removes everything,
+# reclones repository cleanly
+# ==========================================
 
-echo_header "Removing any existing installation..."
+APPNAME="inkypi"
+INSTALL_PATH="/usr/local/$APPNAME"
+BIN_PATH="/usr/local/bin/$APPNAME"
+SERVICE_PATH="/etc/systemd/system/$APPNAME.service"
 
-# Stop service if running
-if systemctl is-active --quiet $SERVICE_NAME; then
-    echo "?? Starting uninstall process..."
-    echo "Stopping service..."
-    sudo systemctl stop $SERVICE_NAME
-else
-    echo "Service not running."
+# CHANGE THIS TO YOUR REAL REPO URL
+REPO_URL="https://github.com/morelos-ricardo/InkyRic.git"
+
+# CHANGE THIS TO WHERE YOU WANT IT CLONED
+CLONE_DIR="/home/pi/inkypi"
+
+echo "=============================="
+echo " InkyPi FULL RESET STARTING"
+echo "=============================="
+
+# Must run as root
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run with sudo."
+  exit 1
 fi
 
-# Disable service
-if systemctl is-enabled --quiet $SERVICE_NAME; then
-    echo "Disabling service..."
-    sudo systemctl disable $SERVICE_NAME
-else
-    echo "Service already disabled."
-fi
+echo ""
+echo "Stopping service..."
+systemctl stop $APPNAME.service 2>/dev/null
 
-# Remove service file
-if [ -f "$SERVICE_FILE" ]; then
-    echo "Removing systemd service file..."
-    sudo rm -f "$SERVICE_FILE"
-else
-    echo "Service file already removed."
-fi
+echo "Disabling service..."
+systemctl disable $APPNAME.service 2>/dev/null
 
-sudo systemctl daemon-reload
+echo "Removing systemd service file..."
+rm -f "$SERVICE_PATH"
 
-# Remove application directory
-if [ -d "$INSTALL_PATH" ]; then
-    echo "Removing application directory..."
-    sudo rm -rf "$INSTALL_PATH"
-else
-    echo "Application directory already removed."
-fi
+echo "Reloading systemd..."
+systemctl daemon-reload
 
-echo "?? Verifying uninstall..."
+echo "Removing executable..."
+rm -f "$BIN_PATH"
 
-ERRORS=0
+echo "Removing installed application directory..."
+rm -rf "$INSTALL_PATH"
 
-[ -d "$INSTALL_PATH" ] && echo "? $INSTALL_PATH still exists" && ERRORS=1
-[ -f "$SERVICE_FILE" ] && echo "? Service file still exists" && ERRORS=1
-systemctl list-unit-files | grep -q "$SERVICE_NAME" && echo "? Service still registered" && ERRORS=1
+echo "Removing old cloned repository..."
+rm -rf "$CLONE_DIR"
 
-if [ "$ERRORS" -eq 0 ]; then
-    echo "? Uninstall completed successfully."
-    exit 0
-else
-    echo "? Uninstall incomplete."
-    exit 1
-fi
+echo ""
+echo "Cloning fresh repository..."
+git clone "$REPO_URL" "$CLONE_DIR"
 
-
-
-
-echo_header "Cloning repository from GitHub..."
-sudo git clone "$GITHUB_REPO" "$INSTALL_PATH"
-echo_header "Cloning complete"
+echo ""
+echo "================================="
+echo " Reset complete."
+echo " Now run install.sh again:"
+echo " cd $CLONE_DIR/install"
+echo " sudo ./install.sh"
+echo "================================="
