@@ -159,8 +159,8 @@ install_app_service() {
 
 install_executable() {
   echo "Adding executable to ${BINPATH}/$APPNAME"
-  cp "$SERVICE_FILE" $BINPATH/
-  sudo chmod +x $BINPATH/$SERVICE_NAME   
+  cp $SCRIPT_DIR/inkypi $BINPATH/
+  sudo chmod +x $BINPATH/$APPNAME
 }
 
 stop_service() {
@@ -177,6 +177,7 @@ stop_service() {
 start_service() {
   echo "Starting $APPNAME service."
   sudo systemctl start $SERVICE_FILE
+  }
 
 
 ask_for_reboot() {
