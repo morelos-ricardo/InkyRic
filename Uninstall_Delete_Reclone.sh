@@ -1,86 +1,82 @@
 #!/bin/bash
 # =============================================================================
-# Uninstall, Delete old clone, and Re-clone the InkyRic repository
+# FULL RESET SCRIPT
+# Stops service, removes installation, deletes repo, reclones fresh copy
 # =============================================================================
 
 # -------------------------------
 # CONFIGURATION
 # -------------------------------
-# Repository URL
 REPO_URL="https://github.com/morelos-ricardo/InkyRic.git"
-
-# Target clone directory (old repo location)
 CLONE_DIR="/home/rma/InkyRic"
-
-# Keep this script safe
-SCRIPT_NAME="Uninstall_Delete_Reclone.sh"
-SCRIPT_PATH="$(realpath "$0")"
-
-# -------------------------------
-# Utility functions
-# -------------------------------
-echo_header() {
-    bold=$(tput bold)
-    normal=$(tput sgr0)
-    echo -e "${bold}$1${normal}"
-}
-
-echo_success() {
-    echo -e "[\e[32m✔\e[0m] $1"
-}
-
-echo_error() {
-    echo -e "[\e[31m✖\e[0m] $1"
-}
-
-check_permissions() {
-    if [ "$EUID" -ne 0 ]; then
-        echo_error "This script must be run with sudo/root privileges."
-        exit 1
-    fi
-}
+INSTALL_DIR="/usr/local/inkypi"
+EXECUTABLE_PATH="/usr/local/bin/inkypi"
+SERVICE_NAME="inkypi.service"
 
 # -------------------------------
-# MAIN SCRIPT
+# REQUIRE ROOT
 # -------------------------------
-check_permissions
-
-echo_header "Starting Uninstall / Delete / Re-clone process..."
-
-# Stop any running service first (if it exists)
-if systemctl list-units --full -all | grep -q "inkypi.service"; then
-    echo "Stopping inkypi service..."
-    systemctl stop inkypi.service
-    systemctl disable inkypi.service
+if [ "$EUID" -ne 0 ]; then
+    echo "This script must be run with sudo."
+    exit 1
 fi
 
-# Remove old systemd service file if exists
-if [ -f "/etc/systemd/system/inkypi.service" ]; then
-    echo "Removing old systemd service..."
-    rm -f /etc/systemd/system/inkypi.service
+echo "Starting FULL uninstall / delete / reclone process..."
+
+# -------------------------------
+# STOP AND DISABLE SERVICE
+# -------------------------------
+if systemctl list-unit-files | grep -q "$SERVICE_NAME"; then
+    echo "Stopping $SERVICE_NAME..."
+    systemctl stop "$SERVICE_NAME" 2>/dev/null
+    systemctl disable "$SERVICE_NAME" 2>/dev/null
+fi
+
+# -------------------------------
+# REMOVE SYSTEMD SERVICE FILE
+# -------------------------------
+if [ -f "/etc/systemd/system/$SERVICE_NAME" ]; then
+    echo "Removing systemd service file..."
+    rm -f "/etc/systemd/system/$SERVICE_NAME"
     systemctl daemon-reload
 fi
 
-# Remove old virtual environment
-if [ -d "$CLONE_DIR/venv_inkypi" ]; then
-    echo "Removing old Python virtual environment..."
-    rm -rf "$CLONE_DIR/venv_inkypi"
+# -------------------------------
+# REMOVE INSTALL DIRECTORY
+# -------------------------------
+if [ -d "$INSTALL_DIR" ]; then
+    echo "Removing install directory: $INSTALL_DIR"
+    rm -rf "$INSTALL_DIR"
 fi
 
-# Delete everything in the clone directory except this script
+# -------------------------------
+# REMOVE EXECUTABLE
+# -------------------------------
+if [ -f "$EXECUTABLE_PATH" ]; then
+    echo "Removing executable: $EXECUTABLE_PATH"
+    rm -f "$EXECUTABLE_PATH"
+fi
+
+# -------------------------------
+# DELETE ENTIRE REPO DIRECTORY
+# -------------------------------
 if [ -d "$CLONE_DIR" ]; then
-    echo "Cleaning old clone directory: $CLONE_DIR"
-    find "$CLONE_DIR" -mindepth 1 ! -name "$SCRIPT_NAME" -exec rm -rf {} +
+    echo "Removing old repository directory: $CLONE_DIR"
+    rm -rf "$CLONE_DIR"
 fi
 
-# Clone fresh repository
-echo "Cloning fresh repository into $CLONE_DIR..."
-git clone "$REPO_URL" "$CLONE_DIR" || {
-    echo_error "Failed to clone repository. Check network/URL."
+# -------------------------------
+# CLONE FRESH COPY
+# -------------------------------
+echo "Cloning fresh repository..."
+git clone "$REPO_URL" "$CLONE_DIR"
+
+if [ $? -ne 0 ]; then
+    echo "Git clone failed. Check network connection."
     exit 1
-}
+fi
 
-echo_success "Repository successfully cloned."
-
-echo_header "Uninstall/Delete/Re-clone process completed."
-echo "You can now run the install.sh script in the cloned repository to set up the environment."
+echo "Repository successfully recloned."
+echo "Reset process complete."
+echo "You can now run:"
+echo "cd $CLONE_DIR/install && sudo bash install.sh"
