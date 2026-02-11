@@ -11,11 +11,11 @@ INSTALL_PATH="/usr/local/$APPNAME"
 BIN_PATH="/usr/local/bin/$APPNAME"
 SERVICE_PATH="/etc/systemd/system/$APPNAME.service"
 
-# CHANGE THIS TO YOUR REAL REPO URL
+#  REPO URL
 REPO_URL="https://github.com/morelos-ricardo/InkyRic.git"
 
 # CHANGE THIS TO WHERE YOU WANT IT CLONED
-CLONE_DIR="/home/pi/inkypi"
+CLONE_DIR="/home/rma/InkkyRic"
 
 echo "=============================="
 echo " InkyPi FULL RESET STARTING"
