@@ -3,7 +3,7 @@
 # Automatic Installer for E-Ink Slideshow (old style + useful functions)
 # =============================================================================
 
-#Installer. Installs assuming repo is cloned.
+#Installer. Installs assuming repo is cloned into /usr/local/inkypi
 
 # Formatting stuff
 bold=$(tput bold)
