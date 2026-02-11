@@ -30,8 +30,10 @@ SERVICE_FILE="$APPNAME.service"
 SERVICE_FILE_SOURCE="$SCRIPT_DIR/$SERVICE_FILE"
 SERVICE_FILE_TARGET="/etc/systemd/system/$SERVICE_FILE"
 
-PIP_REQUIREMENTS_FILE="$INSTALL_PATH/requirements.txt"
 APT_REQUIREMENTS_FILE="$SCRIPT_DIR/debian-requirements.txt"
+#They are system-level packages installed with apt, not Python packages. eg: Hardware ->Debian system packages (apt)->Python->pip packages->Your app
+PIP_REQUIREMENTS_FILE="$INSTALL_PATH/requirements.txt"
+
 
 
 
@@ -204,20 +206,12 @@ ask_for_reboot() {
 
 
 
-intstall_general_libraries(){
-sudo apt-get update
-sudo apt-get install tree
-}
-
-
 # -------------------------------
 # Main installation steps
 # -------------------------------
 
 check_permissions
 stop_service
-
-intstall_general_libraries
 
 enable_interfaces   # Enable SPI/I2C interfaces
 install_debian_dependencies
