@@ -10,3 +10,4 @@ fonts-noto-color-emoji
 swig
 liblgpio-dev
 jq
+tree
