@@ -215,8 +215,6 @@ stop_service
 
 enable_interfaces   # Enable SPI/I2C interfaces
 install_debian_dependencies
-echo_header "Installing Python dependencies globally..."
-
 create_venv
 install_executable
 #install_config ??needed?
