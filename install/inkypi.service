@@ -1,21 +1,21 @@
 [Unit]
-Description=InkyPi App      # Friendly description of the service
-After=network-online.target               # Wait until network is online before starting
-Wants=network-online.target               # Ensure network-online.target is pulled in as dependency
+Description=InkyPi App
+After=network-online.target
+Wants=network-online.target
 
 [Service]
-User=root                                 # Run as root (same as old inkypi.service)
+User=root
 RuntimeDirectory=inkypi
 WorkingDirectory=/run/inkypi
 ExecStart=/usr/local/bin/inkypi run
                                           
-Restart=on-failure                        # Restart only if the script crashes
-RestartSec=60                             # Wait 60 seconds before restarting after a failure
-KillSignal=SIGINT                          # Cleanly shut down Python script on stop/restart
-StandardOutput=journal                     # Send stdout to systemd journal
-StandardError=journal                      # Send stderr to systemd journal
-CPUQuota=40%                               # Limit CPU usage to 40% of one CPU
-MemoryMax=200M                             # Limit memory usage to 200 MB
+Restart=on-failure
+RestartSec=60
+KillSignal=SIGINT
+StandardOutput=journal
+StandardError=journal
+CPUQuota=40%
+MemoryMax=200M
 
 [Install]
-WantedBy=multi-user.target                # Start automatically at boot in multi-user mode
+WantedBy=multi-user.target
