@@ -32,7 +32,7 @@ SERVICE_FILE_TARGET="/etc/systemd/system/$SERVICE_FILE"
 
 APT_REQUIREMENTS_FILE="$SCRIPT_DIR/debian-requirements.txt"
 #They are system-level packages installed with apt, not Python packages. eg: Hardware ->Debian system packages (apt)->Python->pip packages->Your app
-PIP_REQUIREMENTS_FILE="$INSTALL_PATH/requirements.txt"
+PIP_REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 
 
 
