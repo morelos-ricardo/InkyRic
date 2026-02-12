@@ -1,58 +1,114 @@
 #!/bin/bash
-set -e
 
-APP_DIR="/opt/eink"
-SERVICE_NAME="eink-slideshow.service"
-SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME"
+# Formatting stuff
+bold=$(tput bold)
+normal=$(tput sgr0)
+red=$(tput setaf 1)
+green=$(tput setaf 2)
 
-echo "🔴 Starting uninstall process..."
+APPNAME="inkypi"
+INSTALL_PATH="/usr/local/$APPNAME"
+BINPATH="/usr/local/bin"
+VENV_PATH="$INSTALL_PATH/venv_$APPNAME"
+SERVICE_FILE="/etc/systemd/system/$APPNAME.service"
+CONFIG_DIR="$INSTALL_PATH/src/config"
 
-# Stop service if running
-if systemctl is-active --quiet $SERVICE_NAME; then
-    echo "Stopping service..."
-    sudo systemctl stop $SERVICE_NAME
-else
-    echo "Service not running."
-fi
+echo_success() {
+  echo -e "$1 [\e[32m\xE2\x9C\x94\e[0m]"
+}
 
-# Disable service
-if systemctl is-enabled --quiet $SERVICE_NAME; then
-    echo "Disabling service..."
-    sudo systemctl disable $SERVICE_NAME
-else
-    echo "Service already disabled."
-fi
+echo_override() {
+  echo -e "\r$1"
+}
 
-# Remove service file
-if [ -f "$SERVICE_FILE" ]; then
-    echo "Removing systemd service file..."
-    sudo rm -f "$SERVICE_FILE"
-else
-    echo "Service file already removed."
-fi
+echo_header() {
+  echo -e "${bold}$1${normal}"
+}
 
-sudo systemctl daemon-reload
+echo_error() {
+  echo -e "${red}$1${normal} [\e[31m\xE2\x9C\x98\e[0m]\n"
+}
 
-# Remove application directory
-if [ -d "$APP_DIR" ]; then
-    echo "Removing application directory..."
-    sudo rm -rf "$APP_DIR"
-else
-    echo "Application directory already removed."
-fi
-
-echo "🔍 Verifying uninstall..."
-
-ERRORS=0
-
-[ -d "$APP_DIR" ] && echo "❌ $APP_DIR still exists" && ERRORS=1
-[ -f "$SERVICE_FILE" ] && echo "❌ Service file still exists" && ERRORS=1
-systemctl list-unit-files | grep -q "$SERVICE_NAME" && echo "❌ Service still registered" && ERRORS=1
-
-if [ "$ERRORS" -eq 0 ]; then
-    echo "✅ Uninstall completed successfully."
-    exit 0
-else
-    echo "❌ Uninstall incomplete."
+check_permissions() {
+  # Ensure the script is run with sudo
+  if [ "$EUID" -ne 0 ]; then
+    echo_error "ERROR: Uninstallation requires root privileges. Please run it with sudo."
     exit 1
-fi
+  fi
+}
+
+stop_service() {
+  echo "Stopping $APPNAME service"
+  if /usr/bin/systemctl is-active --quiet "$APPNAME.service"
+  then
+    /usr/bin/systemctl stop "$APPNAME.service"
+    echo_success "\tService stopped successfully."
+  else
+    echo_success "\tService is not running."
+  fi
+}
+
+disable_service() {
+  echo "Disabling $APPNAME service"
+  if [ -f "$SERVICE_FILE" ]; then
+    /usr/bin/systemctl disable "$APPNAME.service"
+    rm -f "$SERVICE_FILE"
+    /usr/bin/systemctl daemon-reload
+    echo_success "\tService disabled and removed."
+  else
+    echo_success "\tService file does not exist. Nothing to remove."
+  fi
+}
+
+remove_files() {
+  echo "Removing application files"
+  # Remove device.json if it exists
+  if [ -f "$CONFIG_DIR/device.json" ]; then
+    rm "$CONFIG_DIR/device.json"
+    echo_success "\tRemoved device.json."
+  else
+    echo_success "\tdevice.json does not exist in $CONFIG_DIR"
+  fi
+
+  # Remove plugins.json if it exists
+  if [ -f "$CONFIG_DIR/plugins.json" ]; then
+    rm "$CONFIG_DIR/plugins.json"
+    echo_success "\tRemoved plugins.json."
+  else
+    echo_success "\tplugins.json does not exist in $CONFIG_DIR"
+  fi
+
+  # Remove the installation directory
+  if [ -d "$INSTALL_PATH" ]; then
+    rm -rf "$INSTALL_PATH"
+    echo_success "\tInstallation directory $INSTALL_PATH removed."
+  else
+    echo_success "\tInstallation directory $INSTALL_PATH does not exist."
+  fi
+
+  # Remove the executable
+  if [ -f "$BINPATH/$APPNAME" ]; then
+    rm -f "$BINPATH/$APPNAME"
+    echo_success "\tExecutable $BINPATH/$APPNAME removed."
+  else
+    echo_success "\tExecutable $BINPATH/$APPNAME does not exist."
+  fi
+}
+
+confirm_uninstall() {
+  echo -e "${bold}Are you sure you want to uninstall $APPNAME? (y/N): ${normal}"
+  read -r confirmation
+  if [[ "$confirmation" != "y" && "$confirmation" != "Y" ]]; then
+    echo_error "Uninstallation cancelled."
+    exit 1
+  fi
+}
+
+check_permissions
+confirm_uninstall
+stop_service
+disable_service
+remove_files
+
+echo_success "Uninstallation complete."
+echo_header "All components of $APPNAME have been removed."
