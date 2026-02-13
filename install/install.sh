@@ -165,6 +165,20 @@ install_executable() {
   sudo chmod +x $BINPATH/$APPNAME
 }
 
+install_config() {
+  CONFIG_BASE_DIR="$SCRIPT_DIR/config_base"
+  CONFIG_DIR="$SRC_PATH/config"
+  echo "Copying config files to $CONFIG_DIR"
+
+  # Check and copy device.config if it doesn't exist
+  if [ ! -f "$CONFIG_DIR/device.json" ]; then
+    cp "$CONFIG_BASE_DIR/device.json" "$CONFIG_DIR/"
+    show_loader "\tCopying device.config to $CONFIG_DIR"
+  else
+    echo_success "\tdevice.json already exists in $CONFIG_DIR"
+  fi
+}
+
 stop_service() {
     echo "Checking if $SERVICE_FILE is running"
     if /usr/bin/systemctl is-active --quiet $SERVICE_FILE
@@ -217,7 +231,7 @@ enable_interfaces   # Enable SPI/I2C interfaces
 install_debian_dependencies
 create_venv
 install_executable
-#install_config ??needed?
+install_config ??needed?
 install_app_service
 
 
