@@ -21,6 +21,13 @@ device_config = Config()
 # Initialize display manager (chooses InkyDisplay automatically)
 display_manager = DisplayManager(device_config)
 
+# Optionally display a startup image
+if device_config.get_config("startup") is True:
+    logger.info("Displaying startup image")    
+    img = generate_startup_image(device_config.get_resolution())
+    display_manager.display_image(img)
+    device_config.update_value("startup", False, write=True)
+
 # Check if image directory exists
 if not os.path.exists(IMAGE_DIR):
     raise RuntimeError(f"Image directory does not exist: {IMAGE_DIR}")
@@ -37,12 +44,6 @@ if not images:
 
 logger.info(f"Loaded {len(images)} images from {IMAGE_DIR}")
 
-# Optionally display a startup image
-if device_config.get_config("startup") is True:
-    logger.info("Displaying startup image")    
-    img = generate_startup_image(device_config.get_resolution())
-    display_manager.display_image(img)
-    device_config.update_value("startup", False, write=True)
 
 # Main slideshow loop
 try:
