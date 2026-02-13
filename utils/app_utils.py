@@ -109,29 +109,23 @@ def generate_startup_image(dimensions=(800,480)):
     text_color = (0,0,0)
     width, height = dimensions
 
-    hostname = socket.gethostname()
-    ip = get_ip_address()
+    #hostname = socket.gethostname()
+    #ip = get_ip_address()
 
     image = Image.new("RGBA", dimensions, bg_color)
     image_draw = ImageDraw.Draw(image)
 
     title_font_size = width * 0.145
-    image_draw.text((width/2, height/2), "inkypi", anchor="mm", fill=text_color, font=get_font("Jost", title_font_size))
+    image_draw.text((width/2, height/2), "Hello World", anchor="mm", fill=text_color, font=get_font("Jost", title_font_size))
 
-    text = f"To get started, visit http://{hostname}.local"
-    text_font_size = width * 0.032
+    #text = f"To get started, visit http://{hostname}.local"
+    #text_font_size = width * 0.032
 
     # Draw the instructions
-    y_text = height * 3 / 4
-    image_draw.text((width/2, y_text), text, anchor="mm", fill=text_color, font=get_font("Jost", text_font_size))
+    #y_text = height * 3 / 4
+    #image_draw.text((width/2, y_text), text, anchor="mm", fill=text_color, font=get_font("Jost", text_font_size))
 
     # Draw the IP on a line below
-    ip_text = f"or http://{ip}"
-    ip_text_font_size = width * 0.032
-    bbox = image_draw.textbbox((0, 0), text, font=get_font("Jost", text_font_size))
-    text_height = bbox[3] - bbox[1]
-    ip_y = y_text + text_height * 1.35
-    image_draw.text((width/2, ip_y), ip_text, anchor="mm", fill=text_color, font=get_font("Jost", ip_text_font_size))
 
     return image
 
