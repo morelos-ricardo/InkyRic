@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 # Configuration
-IMAGE_DIR = "/usr/local/inkypi/images"
+IMAGE_DIR = "/home/rma/InkyRic/images"
 SLEEP_SECONDS = 300  # can also be loaded from Config if desired
 
 # Initialize device config
